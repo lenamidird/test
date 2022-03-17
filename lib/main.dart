@@ -4,8 +4,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:test_flutter_secure_storage/success.dart';
 
 import './secure_storage.dart';
+import 'hello.dart';
 
 
 
@@ -27,10 +29,18 @@ class MyApp extends StatelessWidget {
         appBar: AppBar(
           title: const Text(appTitle),
         ),
-        body: const MyCustomForm(),
-      ),
+        body: const MyCustomForm(),),
 
-    );
+        routes: {
+          // When navigating to the "/" route, build the FirstScreen widget.
+          // '/': (context) => const MyCustomForm(),
+          // When navigating to the "/second" route, build the SecondScreen widget.
+          '/success': (context) => Success(),
+          '/hello': (context) => Hello(),
+        },
+      );
+
+
   }
 }
 
@@ -84,6 +94,17 @@ class _MyCustomFormState extends State<MyCustomForm> {
   Map<String,String> _futureAuth={};
 
 
+  final _formKey = GlobalKey<FormState>();
+
+  String? validateText(String formText){
+
+    if (formText.isEmpty) return
+      'field is required';
+
+
+
+
+  }
 
 
 
@@ -96,12 +117,20 @@ class _MyCustomFormState extends State<MyCustomForm> {
       children: <Widget>[
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: TextField(decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Enter your email',
-          ),
+          child: Form(
 
-            controller: myController,
+
+            child: TextFormField(
+
+
+
+                 decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter your email',
+            ),
+
+              controller: myController,
+            ),
           ),
         ),
         Padding(

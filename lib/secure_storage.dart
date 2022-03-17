@@ -13,9 +13,17 @@ class SecureStorage{
   Future stockToken(String Key)async{
 
     var tokenStocked= await storage.write(key: 'jwt', value: Key);
+    Map<String, String> Values = await storage.readAll();
 
-    print('Key');
-    print(Key);
+
+    print('storage');
+
+
+    print(Values);
+
+
+
+    // print(Key);
     await storage.deleteAll();
     print('remove storage');
     Map<String, String> allValues = await storage.readAll();
