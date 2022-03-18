@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:test_flutter_secure_storage/success.dart';
-
-import './secure_storage.dart';
-import 'hello.dart';
+import 'package:http_retry/http_retry.dart';
+import './hello.dart';
 
 
 
@@ -18,8 +17,6 @@ void main() {
 
 class MyApp extends StatelessWidget {
 
-
-
   @override
   Widget build(BuildContext context) {
     const appTitle = 'Authentication';
@@ -29,108 +26,100 @@ class MyApp extends StatelessWidget {
         appBar: AppBar(
           title: const Text(appTitle),
         ),
-        body: const MyCustomForm(),),
-
+        body: Login(),),
         routes: {
-          // When navigating to the "/" route, build the FirstScreen widget.
-          // '/': (context) => const MyCustomForm(),
-          // When navigating to the "/second" route, build the SecondScreen widget.
-          '/success': (context) => Success(),
+
           '/hello': (context) => Hello(),
         },
       );
-
-
   }
 }
 
-Future<Map<String, String>> createAuth(String email,String password,String FCM) async {
-
-  final response= await http.post(
-    Uri.parse('http://192.168.1.15:3000/auth/signin'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-
-    body: jsonEncode(<String, String>{
-      'email': email,
-      'password':password,
-      'FCM':FCM,
-    }),
-  );
 
 
 
 
 
 
-  dynamic?  token=response.body;
-  SecureStorage tokenStorage=SecureStorage();
-  tokenStorage.stockToken(token);
-
-
-
-
-  Map<String,String> result={'statusCode':response.statusCode.toString(),
-    'data':response.statusCode==201 ? json.decode(response.body)['accessToken'] :''};
-
-
-  return(result);
-
-}
-
-
-class MyCustomForm extends StatefulWidget {
-  const MyCustomForm({Key? key}) : super(key: key);
-
-  @override
-  State<MyCustomForm> createState() => _MyCustomFormState();
-}
-
-class _MyCustomFormState extends State<MyCustomForm> {
+class Login  extends StatelessWidget {
   final myController = TextEditingController();
   String password ="";
   String FCM="";
   Map<String,String> _futureAuth={};
+  final storage = new FlutterSecureStorage();
 
+  dynamic _futureHello;
+  String Token="" ;
 
-  final _formKey = GlobalKey<FormState>();
+  Future<Map<String, String>> createAuth(String email,String password,String FCM) async {
 
-  String? validateText(String formText){
+    final response= await http.post(
+      Uri.parse('http://192.168.1.15:3000/auth/signin'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
 
-    if (formText.isEmpty) return
-      'field is required';
+      body: jsonEncode(<String, String>{
+        'email': email,
+        'password':password,
+        'FCM':FCM,
+      }),
+    );
 
-
-
-
+    Map<String,String> result={'statusCode':response.statusCode.toString(),
+      'data':response.statusCode==201 ? json.decode(response.body)['accessToken'] :''};
+    return(result);
   }
+
+
+
+
+  Future<http.Response> fetchHelloUser() async {
+    String? Token= await storage.read(key: 'jwt');
+    final client = RetryClient(
+      http.Client(),
+      retries: 1,
+      when: (response) {
+        return response.statusCode == 401 ? true : false;
+      },
+      onRetry: (req, res, retryCount) async {
+        if (retryCount == 0 && res?.statusCode == 401) {
+          print('you are not authorized');
+          // Navigator.pushNamed(context, '/');
+        }
+      },
+    );
+
+    try {
+      final response = await client.get(
+        Uri.parse('http://192.168.1.15:3000/auth/hello-user'),
+        headers: {
+          'Authorization': 'Bearer $Token',
+        },
+      );
+
+      return (response);
+    } finally {
+      client.close();
+    }
+  }
+
 
 
 
   @override
   Widget build(BuildContext context) {
-
-
     return Column(
-      // crossAxisAlignment: CrossAxisAlignment.start,
+
       children: <Widget>[
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: Form(
-
-
-            child: TextFormField(
-
-
-
-                 decoration: InputDecoration(
+          child: TextFormField(
+            decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Enter your email',
             ),
-
-              controller: myController,
-            ),
+            controller: myController,
           ),
         ),
         Padding(
@@ -154,18 +143,35 @@ class _MyCustomFormState extends State<MyCustomForm> {
           _futureAuth= await createAuth(myController.text,password,FCM);
           print('******');
 
-          if(_futureAuth['statusCode']=='201') {
+           String? token=await _futureAuth['data'];
+
+          await storage.write(key: 'jwt',value:token);
+
+           Map<String,String> allValues=await storage.readAll();
+           print('my secure storage');
+           print(allValues);
 
 
-            print('logged in successfully');
 
-          }
         },
-            child: Text("Log in"))
+            child: Text("Log in")),
+
+        ElevatedButton(
+            onPressed: () async {
+              _futureHello = await fetchHelloUser();
+
+              if (_futureHello.statusCode == 200)
+                Navigator.pushNamed(context, '/hello');
+            },
+            child: Text('Navigate to your authorized screen'))
+
+
+
 
       ],
     );
   }
 }
+
 
 
