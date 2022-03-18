@@ -153,7 +153,30 @@ class Login  extends StatelessWidget {
 
 
 
+          if(_futureAuth['statusCode']=='201'){
+          showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                    title:  Text('Logged in successfully with :'),
+                    content:  Text(myController.text),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, 'ok'),
+                        child: const Text('See'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, 'Close'),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),);}
+
+
+
         },
+
+
+
             child: Text("Log in")),
 
         ElevatedButton(
