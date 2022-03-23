@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_retry/http_retry.dart';
@@ -46,7 +46,8 @@ class Login  extends StatelessWidget {
   String password ="";
   String FCM="";
   Map<String,String> _futureAuth={};
-  final storage = new FlutterSecureStorage();
+  // final storage = new FlutterSecureStorage();
+  final Future <SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   dynamic _futureHello;
   String Token="" ;
@@ -54,7 +55,7 @@ class Login  extends StatelessWidget {
   Future<Map<String, String>> createAuth(String email,String password,String FCM) async {
 
     final response= await http.post(
-      Uri.parse('http://192.168.1.15:3000/auth/signin'),
+      Uri.parse('http://192.168.1.16:3000/auth/signin'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -75,7 +76,12 @@ class Login  extends StatelessWidget {
 
 
   Future<http.Response> fetchHelloUser() async {
-    String? Token= await storage.read(key: 'jwt');
+    // String? Token= await storage.read(key: 'jwt');
+
+    final SharedPreferences prefs = await _prefs;
+       String? Token  = prefs.getString('jwt');
+print('Token');
+print(Token);
     final client = RetryClient(
       http.Client(),
       retries: 1,
@@ -92,7 +98,7 @@ class Login  extends StatelessWidget {
 
     try {
       final response = await client.get(
-        Uri.parse('http://192.168.1.15:3000/auth/hello-user'),
+        Uri.parse('http://192.168.1.16:3000/auth/hello-user'),
         headers: {
           'Authorization': 'Bearer $Token',
         },
@@ -145,11 +151,21 @@ class Login  extends StatelessWidget {
 
            String? token=await _futureAuth['data'];
 
-          await storage.write(key: 'jwt',value:token);
+          final SharedPreferences prefs = await _prefs;
+          //  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-           Map<String,String> allValues=await storage.readAll();
-           print('my secure storage');
-           print(allValues);
+
+          await  prefs.setString('jwt', token!);
+
+          print('prefs');
+          print(prefs.getString('jwt'));
+
+
+          // await storage.write(key: 'jwt',value:token);
+          //
+          //  Map<String,String> allValues=await storage.readAll();
+          //  print('my secure storage');
+          //  print(allValues);
 
 
 
@@ -170,8 +186,6 @@ class Login  extends StatelessWidget {
                       ),
                     ],
                   ),);}
-
-
 
         },
 
