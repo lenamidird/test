@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_retry/http_retry.dart';
@@ -46,8 +46,8 @@ class Login  extends StatelessWidget {
   String password ="";
   String FCM="";
   Map<String,String> _futureAuth={};
-  // final storage = new FlutterSecureStorage();
-  final Future <SharedPreferences> _prefs = SharedPreferences.getInstance();
+  final storage = new FlutterSecureStorage();
+
 
   dynamic _futureHello;
   String Token="" ;
@@ -76,10 +76,7 @@ class Login  extends StatelessWidget {
 
 
   Future<http.Response> fetchHelloUser() async {
-    // String? Token= await storage.read(key: 'jwt');
-
-    final SharedPreferences prefs = await _prefs;
-       String? Token  = prefs.getString('jwt');
+    String? Token= await storage.read(key: 'jwt');
 print('Token');
 print(Token);
     final client = RetryClient(
@@ -151,21 +148,11 @@ print(Token);
 
            String? token=await _futureAuth['data'];
 
-          final SharedPreferences prefs = await _prefs;
-          //  SharedPreferences prefs = await SharedPreferences.getInstance();
+          await storage.write(key: 'jwt',value:token);
 
-
-          await  prefs.setString('jwt', token!);
-
-          print('prefs');
-          print(prefs.getString('jwt'));
-
-
-          // await storage.write(key: 'jwt',value:token);
-          //
-          //  Map<String,String> allValues=await storage.readAll();
-          //  print('my secure storage');
-          //  print(allValues);
+           Map<String,String> allValues=await storage.readAll();
+           print('my secure storage');
+           print(allValues);
 
 
 
@@ -186,9 +173,7 @@ print(Token);
                       ),
                     ],
                   ),);}
-
         },
-
 
 
             child: Text("Log in")),
@@ -201,9 +186,6 @@ print(Token);
                 Navigator.pushNamed(context, '/hello');
             },
             child: Text('Navigate to your authorized screen'))
-
-
-
 
       ],
     );
